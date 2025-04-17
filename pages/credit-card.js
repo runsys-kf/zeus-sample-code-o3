@@ -22,39 +22,35 @@ export default function CreditCard() {
   }, []);
   // 3DS のコールバック設定
   useEffect(() => {
-    window._onPaResSuccess = async ({ MD: xid, PaRes: paRes }) => {
+    window._onPaResSuccess = async ({ MD, PaRes, status }) => {
       try {
-        // AuthReq → AuthRes
-        const auth = await fetch('/api/payment-result', {
+        const response = await fetch('/api/payment-result', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ step: 'auth', md: xid, PaRes: paRes })
+          body: JSON.stringify({ MD, PaRes, status, amount })
         });
-        const authJson = await auth.json();
-        if (authJson.result?.status !== 'success') {
-          throw new Error(`Auth失敗: ${authJson.result?.code}`);
+        
+        const result = await response.json();
+        
+        // 成功・失敗に関わらず、結果画面に遷移
+        if (result.redirect_url) {
+          window.location.href = result.redirect_url;
+        } else {
+          // リダイレクトURLがない場合はフォールバック
+          setStage('result');
+          setResult(result);
         }
-
-        // PayReq → PayRes
-        const pay = await fetch('/api/payment-result', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ step: 'payment', md: xid })
-        });
-        const payJson = await pay.json();
-
-        setResult(payJson);
+      } catch (error) {
+        console.error('決済エラー:', error);
         setStage('result');
-      } catch (e) {
-        alert('決済処理エラー: ' + e.message);
-        setStage('input');
+        setResult({ error: error.message });
       }
     };
     window._onError = (err) => {
       alert('3D認証エラー: ' + (err.message || JSON.stringify(err)));
       setStage('input');
     };
-  }, []);
+  }, [amount]);
 
   // 入力 → EnrolReq
   const handleSubmit = async e => {
