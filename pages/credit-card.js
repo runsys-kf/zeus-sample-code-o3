@@ -24,6 +24,7 @@ export default function CreditCard() {
   useEffect(() => {
     window._onPaResSuccess = async ({ MD, PaRes, status }) => {
       try {
+        // APIリクエスト
         const response = await fetch('/api/payment-result', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -31,12 +32,16 @@ export default function CreditCard() {
         });
         
         const result = await response.json();
+        console.log('決済結果:', result);
         
-        // 成功・失敗に関わらず、結果画面に遷移
+        // シンプルな画面遷移
+        console.log('result.redirect_url:', result.redirect_url);
         if (result.redirect_url) {
-          window.location.href = result.redirect_url;
+          // 少し遅延を入れて確実に実行されるようにする
+          setTimeout(() => {
+            window.location.href = result.redirect_url;
+          }, 100);
         } else {
-          // リダイレクトURLがない場合はフォールバック
           setStage('result');
           setResult(result);
         }
@@ -46,7 +51,9 @@ export default function CreditCard() {
         setResult({ error: error.message });
       }
     };
+    
     window._onError = (err) => {
+      console.error('3D認証エラー:', err);
       alert('3D認証エラー: ' + (err.message || JSON.stringify(err)));
       setStage('input');
     };
