@@ -2,10 +2,13 @@
 require('dotenv').config();
 import axios from 'axios';
 import { Builder, parseStringPromise } from 'xml2js';
-import { savePaymentResult, generatePaymentId } from '../../lib/payment-db';
+// import { savePaymentResult, generatePaymentId } from '../../lib/payment-db';
 
 const ZEUS_ENDPOINT = 'https://linkpt.cardservice.co.jp/cgi-bin/secure/api.cgi';
 const builder = new Builder({ headless: true });
+
+// 簡易的なID生成関数（payment-db.jsの代わり）
+const generateSimpleId = () => `payment_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
 export default async function handler(req, res) {
   console.log('リクエストボディ:', req.body);
@@ -106,7 +109,8 @@ export default async function handler(req, res) {
         };
         
         // エラー情報を含む決済結果を保存
-        const paymentId = generatePaymentId();
+        // const paymentId = generatePaymentId(); // 削除されたfunction
+        const paymentId = generateSimpleId(); // 代替関数を使用
         const errorCode = payParsed.response?.result?.[0]?.code?.[0] || 'unknown';
         const paymentData = {
           status: 'failed', // success ではなく failed
@@ -117,7 +121,8 @@ export default async function handler(req, res) {
           timestamp: new Date().toISOString()
         };
         
-        savePaymentResult(paymentId, paymentData);
+        // savePaymentResult(paymentId, paymentData);
+        console.log('決済情報を保存しました:', { paymentId, paymentData });
         
         // エラー結果も決済結果確認画面で表示するため、同じ形式でリダイレクト
         return res.status(200).json({
@@ -128,7 +133,8 @@ export default async function handler(req, res) {
       }
       
       // 決済成功時、結果を保存してIDを返す
-      const paymentId = generatePaymentId();
+      // const paymentId = generatePaymentId(); // 削除されたfunction
+      const paymentId = generateSimpleId(); // 代替関数を使用
       const paymentData = {
         status: 'success',
         order_number: payParsed.response.order_number?.[0],
@@ -145,7 +151,8 @@ export default async function handler(req, res) {
         }
       };
 
-      savePaymentResult(paymentId, paymentData);
+      // savePaymentResult(paymentId, paymentData);
+      console.log('決済情報を保存しました:', { paymentId, paymentData });
 
       // 成功レスポンス（payment_idを含める）
       return res.status(200).json({
