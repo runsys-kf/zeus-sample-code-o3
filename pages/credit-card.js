@@ -32,10 +32,8 @@ export default function CreditCard() {
         });
         
         const result = await response.json();
-        console.log('決済結果:', result);
         
         // シンプルな画面遷移
-        console.log('result.redirect_url:', result.redirect_url);
         if (result.redirect_url) {
           // 少し遅延を入れて確実に実行されるようにする
           setTimeout(() => {
